@@ -19,10 +19,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Extract newest zip from drop
         run: |
-          ZIP=$(ls -t drop/*.zip 2>/dev/null | head -n 1)
+          ZIP=$(git log -1 --diff-filter=AM --name-only --pretty=format: -- 'drop/*.zip' | grep -v '^$' | head -n 1)
+          if [ -z "$ZIP" ] || [ ! -f "$ZIP" ]; then
+            ZIP=$(ls -t drop/*.zip 2>/dev/null | head -n 1)
+          fi
           if [ -z "$ZIP" ]; then
             echo "No zip found in drop/"
             exit 1
@@ -94,6 +99,14 @@ jobs:
       - name: Import project resources
         run: |
           godot --headless --path "$PROJECT_DIR" --import || true
+
+      - name: Self test
+        continue-on-error: true
+        run: |
+          if [ -f "$PROJECT_DIR/tests/selftest.gd" ]; then
+            godot --headless --path "$PROJECT_DIR" --script res://tests/selftest.gd 2>&1 | tee selftest.log
+            grep -q "SELFTEST PASS" selftest.log
+          fi
 
       - name: Export Android APK
         run: |
