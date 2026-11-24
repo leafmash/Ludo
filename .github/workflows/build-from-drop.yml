@@ -84,7 +84,7 @@ jobs:
         run: |
           mkdir -p "$HOME/.config/godot"
           for NAME in editor_settings-4.tres editor_settings-4.3.tres; do
-            cat > "$HOME/.config/godot/$NAME" <<EOF
+            cat > "$HOME/.config/godot/$NAME" <<EOF2
           [gd_resource type="EditorSettings" format=3]
 
           [resource]
@@ -93,7 +93,7 @@ jobs:
           export/android/debug_keystore = "$HOME/debug.keystore"
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
-          EOF
+          EOF2
           done
 
       - name: Import project resources
@@ -106,6 +106,14 @@ jobs:
           if [ -f "$PROJECT_DIR/tests/selftest.gd" ]; then
             godot --headless --path "$PROJECT_DIR" --script res://tests/selftest.gd 2>&1 | tee selftest.log
             grep -q "SELFTEST PASS" selftest.log
+          fi
+
+      - name: Seamless splash (gradle template)
+        continue-on-error: true
+        run: |
+          if [ -f "$PROJECT_DIR/tools/setup_gradle_build.sh" ]; then
+            cd "$PROJECT_DIR"
+            bash tools/setup_gradle_build.sh
           fi
 
       - name: Export Android APK
